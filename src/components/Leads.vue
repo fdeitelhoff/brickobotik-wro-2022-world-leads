@@ -1,11 +1,17 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { getValidationMessages } from '@formkit/validation';
 import { reset } from '@formkit/core';
 import { setErrors, clearErrors } from '@formkit/vue';
+import { createClient } from '@supabase/supabase-js';
 
 const messages = ref([]);
 var complete = ref(false);
+
+const supabase = createClient(
+  'https://ddyurgzbimitqcmknmho.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRkeXVyZ3piaW1pdHFjbWtubWhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE2NjA1NjQyODQsImV4cCI6MTk3NjE0MDI4NH0.mJDmHJ2cM2J57KEPZHbSif7jiOSRa7L5iANSOqDFX60'
+);
 
 function newsletter(node) {
   console.log('newsletter is called!', node);
@@ -41,11 +47,24 @@ async function handleSubmit(data, node) {
     messages.value.push('das geht so nicht');
   } else {
     await new Promise((r) => setTimeout(r, 2500)); // maybe with a submitting animation...
+    // const { error } = await supabase
+    //   .from('contacts')
+    //   .insert({ id: 1, name: 'Denmark' });
+
     messages.value.length = 0;
     complete.value = true;
     reset('leads');
   }
 }
+
+onMounted(async () => {
+  console.log('on mounted', supabase);
+
+  const { data, error } = await supabase.from('events').select();
+
+  console.log(error);
+  console.log(data);
+});
 </script>
 
 <template>
@@ -75,14 +94,6 @@ async function handleSubmit(data, node) {
     <ul class="validation-errors" v-if="messages.length">
       <li v-for="message in messages">{{ message }}</li>
     </ul>
-    <FormKit
-      type="select"
-      label="Titel"
-      name="title"
-      placeholder="Ihr Titel"
-      help="Geben Sie bitte Ihren Titel an (optional)."
-      :options="['', 'Dr.', 'Dr.-Ing', 'Prof.', '...']"
-    />
     <FormKit
       type="text"
       prefix-icon="people"
@@ -129,20 +140,14 @@ async function handleSubmit(data, node) {
       label="Schule/Organisation/Unternehmen"
       placeholder="Sind Sie beruflich hier?"
       help="Geben Sie bitte Ihre Schule, Organisation oder das Unternehmen an (optional)."
-      name="organization"
+      name="affiliation"
+      validation="required"
     />
     <FormKit
       type="checkbox"
-      prefix="settings"
       label="Kennen Sie brickobotik bereits?"
       name="already_known"
       help="Haben Sie bereits über andere Wege von uns erfahren?"
-    />
-    <FormKit
-      type="checkbox"
-      label="Haben Sie Interesse an Info-Materialien?"
-      name="info"
-      help="Dürfen wir Ihnen im Anschluss unsere Info-Materialien per E-Mail zukommen lassen?"
     />
     <FormKit
       type="checkbox"
@@ -157,6 +162,12 @@ async function handleSubmit(data, node) {
       label="Sind Sie an Kursen/Workshops für Kinder/Jugendliche interessiert?"
       name="kids_program"
       help="Sind Sie an Kursen/Workshops für Kinder oder Jugendliche interessiert, zum Beispiel MINT-Ferienprogramme, einen MINT-Verein oder ähnliches?"
+    />
+    <FormKit
+      type="checkbox"
+      label="Möchten Sie am Gewinnspiel teilnehmen?"
+      name="raffle"
+      help="Möchten sie an unserem Gewinnspiel (Verlosung) teilnehmen?"
     />
     <FormKit
       type="checkbox"
