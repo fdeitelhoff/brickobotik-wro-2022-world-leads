@@ -4,9 +4,12 @@ import { getValidationMessages } from '@formkit/validation';
 import { reset } from '@formkit/core';
 import { setErrors, clearErrors } from '@formkit/vue';
 import { createClient } from '@supabase/supabase-js';
+import { v4 as uuidv4 } from 'uuid';
 
 const messages = ref([]);
 var complete = ref(false);
+const eventDayUuid = ref('');
+const leadCount = ref(-1);
 
 const supabase = createClient(
   'https://ddyurgzbimitqcmknmho.supabase.co',
@@ -46,24 +49,75 @@ async function handleSubmit(data, node) {
     node.setErrors([], { email: 'das geht so nicht' });
     messages.value.push('das geht so nicht');
   } else {
-    await new Promise((r) => setTimeout(r, 2500)); // maybe with a submitting animation...
+    // await new Promise((r) => setTimeout(r, 2500)); // maybe with a submitting animation...
     // const { error } = await supabase
     //   .from('contacts')
     //   .insert({ id: 1, name: 'Denmark' });
 
+    const contactId = uuidv4();
+
+    const { result, error } = await supabase.from('contacts').insert([
+      {
+        contact_id: contactId,
+        first_name: data.firstname,
+        last_name: data.lastname,
+        email: data.email,
+        phonenumber: data.phone,
+        affiliation: data.affiliation,
+        gdpr_accepted: data.gdpr,
+        gdpr_accepted_date: new Date(),
+        newsletter_subscription:
+          data.newsletter === undefined ? false : data.newsletter,
+      },
+    ]);
+
+    console.log(result, error, contactId);
+
+    if (error === null || error === undefined) {
+      const { result2, error2 } = await supabase.from('leads').insert([
+        {
+          lead_id: uuidv4(),
+          contact_id: contactId,
+          event_day_id: eventDayUuid.value,
+          brickobotik_known:
+            data.already_known === undefined ? false : data.already_known,
+          interested_portfolio:
+            data.kids_program === undefined ? false : data.kids_program,
+          raffle: data.raffle === undefined ? false : data.raffle,
+        },
+      ]);
+
+      console.log(result2, error2, contactId, eventDayUuid.value);
+    }
+
     messages.value.length = 0;
     complete.value = true;
-    reset('leads');
+    // reset('leads');
   }
 }
 
 onMounted(async () => {
-  console.log('on mounted', supabase);
+  const { count, error } = await supabase
+    .from('leads')
+    .select('lead_id', { count: 'exact', head: true });
 
-  const { data, error } = await supabase.from('events').select();
+  console.log('on mounted', supabase, count, error);
 
-  console.log(error);
-  console.log(data);
+  leadCount.value = count;
+
+  const currentMonth = new Date().getMonth() + 1;
+  const currentDay = new Date().getDate();
+
+  eventDayUuid.value = 'dbd73067-33bd-4255-8150-8d178d3d06b2'; // FD: Backup: If something fails, the WRO Event Day 1 is the default.
+  if (currentMonth === 11 && currentDay === 17) {
+    eventDayUuid.value = 'dbd73067-33bd-4255-8150-8d178d3d06b2';
+  } else if (currentMonth === 11 && currentDay === 18) {
+    eventDayUuid.value = '83743ad6-0b1f-4398-aa04-cbd2518b8b61';
+  } else if (currentMonth === 11 && currentDay === 19) {
+    eventDayUuid.value = 'c57d9c2f-9e65-4fc2-9ed9-81ac2f965de5';
+  }
+
+  console.log(currentDay, currentMonth, eventDayUuid.value);
 });
 </script>
 
@@ -80,6 +134,7 @@ onMounted(async () => {
     @submit="handleSubmit"
     @submit-invalid="showErrors"
   >
+    <span class="lead-count">{{ leadCount }}</span>
     <h1>Mehr erfahren</h1>
     <p>
       Ich möchte gerne.... Lorem ipsum dolor sit amet, consetetur sadipscing
@@ -126,9 +181,9 @@ onMounted(async () => {
       prefix-icon="telephone"
       label="Telefon"
       name="phone"
-      placeholder="Ihre Telefonnummer im Format xxx-xxx-xxxx"
-      help="Geben Sie bitte Ihre Telefonnummer an (optional)."
-      :validation="[['matches', /^\d{3}-\d{3}-\d{4}$/]]"
+      placeholder="Ihre Telefonnummer"
+      help="Geben Sie bitte Ihre Telefonnummer an (optional). Format: Eine vier- oder fünfstellige Vorwahl und mindestes zwei Zahlen nach dem Bindestrich."
+      :validation="[['matches', /^\d{4,5}-\d{2,}$/]]"
       validation-visibility="live"
       :validation-messages="{
         matches: 'Das Format für eine Telefonnummer lautet: xxx-xxx-xxxx',
@@ -172,7 +227,7 @@ onMounted(async () => {
     <FormKit
       type="checkbox"
       label="Wir dürfen Ihre Daten verarbeiten (DSGVO)"
-      name="dsgvo"
+      name="gdpr"
       help="Wir benötigen Ihre Zustimmung, um Ihre Daten zu verarbeiten."
       validation="accepted"
     />
@@ -209,6 +264,10 @@ onMounted(async () => {
 
 .success {
   text-align: center;
+}
+
+.lead-count {
+  font-size: 13px;
 }
 
 /* Das funktioniert noch nicht! */
