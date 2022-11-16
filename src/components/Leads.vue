@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import type { Ref } from 'vue';
 import { getValidationMessages } from '@formkit/validation';
 import { reset } from '@formkit/core';
 import { setErrors, clearErrors } from '@formkit/vue';
 import { createClient } from '@supabase/supabase-js';
 import { v4 as uuidv4 } from 'uuid';
 
-const messages = ref([]);
+// const result : string[] = [];
+// const year: Ref<string | number> = ref('2020')
+const messages: Ref<string[]> = ref([]);
 var complete = ref(false);
 const eventDayUuid = ref('');
 const leadCount = ref(-1);
@@ -16,11 +19,11 @@ const supabase = createClient(
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRkeXVyZ3piaW1pdHFjbWtubWhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE2NjA1NjQyODQsImV4cCI6MTk3NjE0MDI4NH0.mJDmHJ2cM2J57KEPZHbSif7jiOSRa7L5iANSOqDFX60'
 );
 
-function newsletter(node) {
+function newsletter(node: any) {
   console.log('newsletter is called!', node);
 }
 
-function showErrors(node) {
+function showErrors(node: any) {
   console.log('show errors is called!', node);
 
   messages.value.length = 0;
@@ -30,15 +33,16 @@ function showErrors(node) {
   //   node.setErrors(['das geht so nicht'], { email: 'das geht so nicht' });
   // }
 
-  const validations = getValidationMessages(node);
+  const validations: Map<any, any> = getValidationMessages(node);
+  console.log('validations', validations);
   validations.forEach((inputMessages) => {
     messages.value = messages.value.concat(
-      inputMessages.map((message) => message.value)
+      inputMessages.map((message: any) => message.value)
     );
   });
 }
 
-async function handleSubmit(data, node) {
+async function handleSubmit(data: any, node: any) {
   console.log('handle submit is called!', data);
 
   // node.clearErrors();
@@ -56,7 +60,7 @@ async function handleSubmit(data, node) {
 
     const contactId = uuidv4();
 
-    const { result, error } = await supabase.from('contacts').insert([
+    const { data: any, error } = await supabase.from('contacts').insert([
       {
         contact_id: contactId,
         first_name: data.firstname,
@@ -71,10 +75,10 @@ async function handleSubmit(data, node) {
       },
     ]);
 
-    console.log(result, error, contactId);
+    // console.log(data, error, contactId);
 
     if (error === null || error === undefined) {
-      const { result2, error2 } = await supabase.from('leads').insert([
+      const { data: any, error } = await supabase.from('leads').insert([
         {
           lead_id: uuidv4(),
           contact_id: contactId,
@@ -87,7 +91,7 @@ async function handleSubmit(data, node) {
         },
       ]);
 
-      console.log(result2, error2, contactId, eventDayUuid.value);
+      // console.log(data, error, contactId, eventDayUuid.value);
     }
 
     messages.value.length = 0;
@@ -103,7 +107,11 @@ onMounted(async () => {
 
   console.log('on mounted', supabase, count, error);
 
-  leadCount.value = count;
+  if (count === null || count === undefined) {
+    leadCount.value = -1;
+  } else {
+    leadCount.value = count;
+  }
 
   const currentMonth = new Date().getMonth() + 1;
   const currentDay = new Date().getDate();
@@ -210,7 +218,6 @@ onMounted(async () => {
       name="newsletter"
       help="Dürfen wir Ihnen im Anschluss unseren Newsletter schicken?"
       validation="newsletter"
-      :validation-rules="{ newsletter }"
     />
     <FormKit
       type="checkbox"
