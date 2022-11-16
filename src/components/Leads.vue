@@ -134,8 +134,8 @@ onMounted(async () => {
     @submit="handleSubmit"
     @submit-invalid="showErrors"
   >
-    <span class="lead-count">{{ leadCount }}</span>
-    <h1>Mehr erfahren</h1>
+    <div class="lead-count">{{ leadCount }}</div>
+    <!-- <h1>Mehr erfahren</h1>
     <p>
       Ich möchte gerne.... Lorem ipsum dolor sit amet, consetetur sadipscing
       elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna
@@ -144,7 +144,7 @@ onMounted(async () => {
       est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet
     </p>
 
-    <hr />
+    <hr /> -->
 
     <ul class="validation-errors" v-if="messages.length">
       <li v-for="message in messages">{{ message }}</li>
@@ -267,7 +267,8 @@ onMounted(async () => {
 }
 
 .lead-count {
-  font-size: 13px;
+  margin-bottom: 20px;
+  font-size: 12px;
 }
 
 /* Das funktioniert noch nicht! */
