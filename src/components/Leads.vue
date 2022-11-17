@@ -13,7 +13,7 @@ var complete = ref(false);
 const eventDayUuid = ref('');
 const leadCount = ref(-1);
 
-const config = inject(Symbol.for('FormKitConfig'));
+const config: any = inject(Symbol.for('FormKitConfig'));
 
 const supabase = createClient(
   'https://ddyurgzbimitqcmknmho.supabase.co',
@@ -159,7 +159,7 @@ onMounted(async () => {
       @submit-invalid="showErrors"
     >
       <a @click.prevent="changeLocale" href="#">
-        <span v-if="currentLocale === 'en'">Switch to 'DE'</span>
+        <!-- <span v-if="currentLocale === 'en'">Switch to 'DE'</span> -->
         <span v-if="currentLocale === 'de'">Auf 'EN' wechseln</span>
       </a>
       <div class="lead-count">{{ leadCount }}</div>
@@ -287,7 +287,7 @@ onMounted(async () => {
     >
       <a @click.prevent="changeLocale" href="#">
         <span v-if="currentLocale === 'en'">Switch to 'DE'</span>
-        <span v-if="currentLocale === 'de'">Auf 'EN' wechseln</span>
+        <!-- <span v-if="currentLocale === 'de'">Auf 'EN' wechseln</span> -->
       </a>
       <div class="lead-count">{{ leadCount }}</div>
 
