@@ -1,23 +1,37 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, inject } from 'vue';
 import type { Ref } from 'vue';
 import { getValidationMessages } from '@formkit/validation';
-import { reset } from '@formkit/core';
+import { reset, getNode } from '@formkit/core';
 import { setErrors, clearErrors } from '@formkit/vue';
 import { createClient } from '@supabase/supabase-js';
 import { v4 as uuidv4 } from 'uuid';
 
-// const result : string[] = [];
-// const year: Ref<string | number> = ref('2020')
+const currentLocale = ref('en');
 const messages: Ref<string[]> = ref([]);
 var complete = ref(false);
 const eventDayUuid = ref('');
 const leadCount = ref(-1);
 
+const config = inject(Symbol.for('FormKitConfig'));
+
 const supabase = createClient(
   'https://ddyurgzbimitqcmknmho.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRkeXVyZ3piaW1pdHFjbWtubWhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE2NjA1NjQyODQsImV4cCI6MTk3NjE0MDI4NH0.mJDmHJ2cM2J57KEPZHbSif7jiOSRa7L5iANSOqDFX60'
 );
+
+const changeLocale = () => {
+  currentLocale.value = currentLocale.value === 'en' ? 'de' : 'en';
+  config.locale = currentLocale.value;
+
+  if (currentLocale.value === 'en') {
+    // const firstnameContext = { ...{ ...getNode('firstname') }.context };
+    // console.log('change locale to en', firstnameContext);
+    // firstnameContext.help = "'Test";
+  } else if (currentLocale.value === 'de') {
+    console.log('change locale to de');
+  }
+};
 
 function newsletter(node: any) {
   console.log('newsletter is called!', node);
@@ -88,6 +102,7 @@ async function handleSubmit(data: any, node: any) {
           interested_portfolio:
             data.kids_program === undefined ? false : data.kids_program,
           raffle: data.raffle === undefined ? false : data.raffle,
+          comments: data.comments,
         },
       ]);
 
@@ -130,20 +145,26 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="success" v-if="complete">
-    <div>Daten erfolgreich übertragen.</div>
-    <div><a href=".">Neuer Eintrag</a></div>
-  </div>
-  <FormKit
-    type="form"
-    id="leads"
-    :form-class="complete ? 'hide' : 'show'"
-    submit-label="Abschicken"
-    @submit="handleSubmit"
-    @submit-invalid="showErrors"
-  >
-    <div class="lead-count">{{ leadCount }}</div>
-    <!-- <h1>Mehr erfahren</h1>
+  <div v-if="currentLocale === 'de'">
+    <div class="success" v-if="complete">
+      <div>Daten erfolgreich übertragen.</div>
+      <div><a href=".">Neuer Eintrag</a></div>
+    </div>
+    <FormKit
+      type="form"
+      id="leads"
+      :form-class="complete ? 'hide' : 'show'"
+      submit-label="Abschicken"
+      @submit="handleSubmit"
+      @submit-invalid="showErrors"
+    >
+      <a @click.prevent="changeLocale" href="#">
+        <span v-if="currentLocale === 'en'">Switch to 'DE'</span>
+        <span v-if="currentLocale === 'de'">Auf 'EN' wechseln</span>
+      </a>
+      <div class="lead-count">{{ leadCount }}</div>
+
+      <!-- <h1>Mehr erfahren</h1>
     <p>
       Ich möchte gerne.... Lorem ipsum dolor sit amet, consetetur sadipscing
       elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna
@@ -154,91 +175,230 @@ onMounted(async () => {
 
     <hr /> -->
 
-    <ul class="validation-errors" v-if="messages.length">
-      <li v-for="message in messages">{{ message }}</li>
-    </ul>
-    <FormKit
-      type="text"
-      prefix-icon="people"
-      label="Vorname"
-      name="firstname"
-      placeholder="Ihr Vorname"
-      help="Geben Sie bitte Ihren Vornamen an."
-      validation="required|length:2"
-    />
-    <FormKit
-      type="text"
-      prefix-icon="people"
-      label="Nachname"
-      name="lastname"
-      placeholder="Ihr Nachname"
-      help="Geben Sie bitte Ihren Nachnamen an."
-      validation="required|length:2"
-    />
-    <FormKit
-      type="email"
-      prefix-icon="email"
-      label="E-Mail-Adresse"
-      name="email"
-      placeholder="Ihre E-Mail-Adresse"
-      help="Geben Sie bitte Ihre E-Mail-Adresse an."
-      validation="required|email"
-    />
-    <FormKit
-      type="tel"
-      prefix-icon="telephone"
-      label="Telefon"
-      name="phone"
-      placeholder="Ihre Telefonnummer"
-      help="Geben Sie bitte Ihre Telefonnummer an (optional). Format: Eine vier- oder fünfstellige Vorwahl und mindestes zwei Zahlen nach dem Bindestrich."
-      :validation="[['matches', /^\d{4,5}-\d{2,}$/]]"
-      validation-visibility="live"
-      :validation-messages="{
+      <ul class="validation-errors" v-if="messages.length">
+        <li v-for="message in messages">{{ message }}</li>
+      </ul>
+      <FormKit
+        type="text"
+        id="firstname"
+        prefix-icon="people"
+        label="Vorname"
+        name="firstname"
+        placeholder="Ihr Vorname"
+        help="Geben Sie bitte Ihren Vornamen an."
+        validation="required|length:2"
+      />
+      <FormKit
+        type="text"
+        prefix-icon="people"
+        label="Nachname"
+        name="lastname"
+        placeholder="Ihr Nachname"
+        help="Geben Sie bitte Ihren Nachnamen an."
+        validation="required|length:2"
+      />
+      <FormKit
+        type="email"
+        prefix-icon="email"
+        label="E-Mail-Adresse"
+        name="email"
+        placeholder="Ihre E-Mail-Adresse"
+        help="Geben Sie bitte Ihre E-Mail-Adresse an."
+        validation="required|email"
+      />
+      <FormKit
+        type="tel"
+        prefix-icon="telephone"
+        label="Telefon"
+        name="phone"
+        placeholder="Ihre Telefonnummer"
+        help="Geben Sie bitte Ihre Telefonnummer an (optional)."
+      />
+      <!-- :validation="[['matches', /^\d{4,5}-\d{2,}$/]]"
+    :validation-messages="{
         matches: 'Das Format für eine Telefonnummer lautet: xxx-xxx-xxxx',
       }"
-    />
+      validation-visibility="live"
+       Format: Eine vier- oder fünfstellige Vorwahl und mindestes zwei Zahlen nach dem Bindestrich.
+       -->
+      <FormKit
+        type="text"
+        prefix-icon="settings"
+        label="Schule/Organisation/Unternehmen"
+        placeholder="Sind Sie beruflich hier?"
+        help="Geben Sie bitte Ihre Schule, Organisation oder das Unternehmen an (optional)."
+        name="affiliation"
+        validation="required"
+      />
+      <FormKit
+        type="textarea"
+        label="Kommentar"
+        name="comments"
+        rows="3"
+        placeholder="Kommentar"
+        help="Zusätzliche Informationen"
+      />
+      <FormKit
+        type="checkbox"
+        label="Kennen Sie brickobotik bereits?"
+        name="already_known"
+        help="Haben Sie bereits über andere Wege von uns erfahren?"
+      />
+      <FormKit
+        type="checkbox"
+        label="Ich möchte den Newsletter abonnieren"
+        name="newsletter"
+        help="Dürfen wir Ihnen im Anschluss unseren Newsletter schicken?"
+        validation="newsletter"
+      />
+      <FormKit
+        type="checkbox"
+        label="Sind Sie an Kursen/Workshops für Kinder/Jugendliche interessiert?"
+        name="kids_program"
+        help="Sind Sie an Kursen/Workshops für Kinder oder Jugendliche interessiert, zum Beispiel MINT-Ferienprogramme, einen MINT-Verein oder ähnliches?"
+      />
+      <FormKit
+        type="checkbox"
+        label="Möchten Sie am Gewinnspiel teilnehmen?"
+        name="raffle"
+        help="Möchten sie an unserem Gewinnspiel (Verlosung) teilnehmen?"
+      />
+      <FormKit
+        type="checkbox"
+        label="Wir dürfen Ihre Daten verarbeiten (DSGVO)"
+        name="gdpr"
+        help="Wir benötigen Ihre Zustimmung, um Ihre Daten zu verarbeiten."
+        validation="accepted"
+      />
+    </FormKit>
+  </div>
+  <div v-if="currentLocale === 'en'">
+    <div class="success" v-if="complete">
+      <div>Data sucessfully submitted.</div>
+      <div><a href=".">New Entry</a></div>
+    </div>
     <FormKit
-      type="text"
-      prefix-icon="settings"
-      label="Schule/Organisation/Unternehmen"
-      placeholder="Sind Sie beruflich hier?"
-      help="Geben Sie bitte Ihre Schule, Organisation oder das Unternehmen an (optional)."
-      name="affiliation"
-      validation="required"
-    />
-    <FormKit
-      type="checkbox"
-      label="Kennen Sie brickobotik bereits?"
-      name="already_known"
-      help="Haben Sie bereits über andere Wege von uns erfahren?"
-    />
-    <FormKit
-      type="checkbox"
-      label="Ich möchte den Newsletter abonnieren"
-      name="newsletter"
-      help="Dürfen wir Ihnen im Anschluss unseren Newsletter schicken?"
-      validation="newsletter"
-    />
-    <FormKit
-      type="checkbox"
-      label="Sind Sie an Kursen/Workshops für Kinder/Jugendliche interessiert?"
-      name="kids_program"
-      help="Sind Sie an Kursen/Workshops für Kinder oder Jugendliche interessiert, zum Beispiel MINT-Ferienprogramme, einen MINT-Verein oder ähnliches?"
-    />
-    <FormKit
-      type="checkbox"
-      label="Möchten Sie am Gewinnspiel teilnehmen?"
-      name="raffle"
-      help="Möchten sie an unserem Gewinnspiel (Verlosung) teilnehmen?"
-    />
-    <FormKit
-      type="checkbox"
-      label="Wir dürfen Ihre Daten verarbeiten (DSGVO)"
-      name="gdpr"
-      help="Wir benötigen Ihre Zustimmung, um Ihre Daten zu verarbeiten."
-      validation="accepted"
-    />
-  </FormKit>
+      type="form"
+      id="leads"
+      :form-class="complete ? 'hide' : 'show'"
+      submit-label="Send"
+      @submit="handleSubmit"
+      @submit-invalid="showErrors"
+    >
+      <a @click.prevent="changeLocale" href="#">
+        <span v-if="currentLocale === 'en'">Switch to 'DE'</span>
+        <span v-if="currentLocale === 'de'">Auf 'EN' wechseln</span>
+      </a>
+      <div class="lead-count">{{ leadCount }}</div>
+
+      <!-- <h1>Mehr erfahren</h1>
+    <p>
+      Ich möchte gerne.... Lorem ipsum dolor sit amet, consetetur sadipscing
+      elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna
+      aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo
+      dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus
+      est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet
+    </p>
+
+    <hr /> -->
+
+      <ul class="validation-errors" v-if="messages.length">
+        <li v-for="message in messages">{{ message }}</li>
+      </ul>
+      <FormKit
+        type="text"
+        id="firstname"
+        prefix-icon="people"
+        label="Firstname"
+        name="firstname"
+        placeholder="Your Firstname"
+        help="Please enter your firstname."
+        validation="required|length:2"
+      />
+      <FormKit
+        type="text"
+        prefix-icon="people"
+        label="Lastname"
+        name="lastname"
+        placeholder="Your Lastname"
+        help="Please enter your lastername."
+        validation="required|length:2"
+      />
+      <FormKit
+        type="email"
+        prefix-icon="email"
+        label="EMail Address"
+        name="email"
+        placeholder="Your EMail Address"
+        help="Please enter your email address."
+        validation="required|email"
+      />
+      <FormKit
+        type="tel"
+        prefix-icon="telephone"
+        label="Phone"
+        name="phone"
+        placeholder="Your Phone Number"
+        help="Please enter your phone number (optional)."
+      />
+      <!-- :validation="[['matches', /^\d{4,5}-\d{2,}$/]]"
+    :validation-messages="{
+        matches: 'Das Format für eine Telefonnummer lautet: xxx-xxx-xxxx',
+      }"
+      validation-visibility="live"
+       Format: Eine vier- oder fünfstellige Vorwahl und mindestes zwei Zahlen nach dem Bindestrich.
+       -->
+      <FormKit
+        type="text"
+        prefix-icon="settings"
+        label="School/Organization/Companty/Private"
+        placeholder="Are you here on business?"
+        help="Please indicate your school, organization or company (optional)."
+        name="affiliation"
+        validation="required"
+      />
+      <FormKit
+        type="textarea"
+        label="Comment"
+        name="comments"
+        rows="3"
+        placeholder="Your Comment"
+        help="Additional Information"
+      />
+      <FormKit
+        type="checkbox"
+        label="Do you know brickobotik already?"
+        name="already_known"
+        help="Have you already heard about us through other channels?"
+      />
+      <FormKit
+        type="checkbox"
+        label="I would like to subscribe to the newsletter"
+        name="newsletter"
+        help="May we send you our newsletter afterwards?"
+        validation="newsletter"
+      />
+      <FormKit
+        type="checkbox"
+        label="Are you interested in courses/workshops for children/youth?"
+        name="kids_program"
+        help="Are you interested in courses/workshops for children or young people, for example STEM vacation programs, a STEM club or similar?"
+      />
+      <FormKit
+        type="checkbox"
+        label="Would you like to participate in the sweepstakes?"
+        name="raffle"
+        help="Would you like to participate in our raffle?"
+      />
+      <FormKit
+        type="checkbox"
+        label="We are allowed to process your data (GDPR)"
+        name="gdpr"
+        help="We are allowed to process your data (DSGVO)"
+        validation="accepted"
+      />
+    </FormKit>
+  </div>
 </template>
 
 <style>

@@ -62,7 +62,7 @@ createApp(App)
     plugin,
     defaultConfig({
       locales: { de, en },
-      locale: 'de',
+      locale: 'en',
       plugins: [
         addAsteriskPlugin,
         messageToHTMLPlugin,
